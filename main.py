@@ -50,14 +50,14 @@ class MatchButton(discord.ui.View):
         results = matching.match(requests)
         out_string = ""
         for i, (score, result_dict) in enumerate(results):
-            out_string += f"======OPTION {i+1}======\n"
+            out_string += f"{i+1}\u20e3\n"
             for game in result_dict:
                 if len(result_dict[game]) > 0:
                     emoji = discord.utils.get(interaction.guild.emojis, name=game.name)
-                    out_string += f"{emoji} {len(result_dict[game])}\n"
+                    out_string += f"{emoji}  {len(result_dict[game])}\n```"
                     for user in result_dict[game]:
                         out_string += user.display_name + " "
-                    out_string += "\n"
+                    out_string += "\n```"
         await interaction.response.send_message(out_string)
 
 
@@ -74,7 +74,9 @@ async def match(ctx):
 
 @bot.command()
 async def add(ctx, name, players):
-    if len(ctx.message.attachments) > 0:
+    if len(name.split(" ")) > 0:
+        await ctx.send("Error: name must not have whitespace")
+    elif len(ctx.message.attachments) > 0:
         logging.info(f"Adding {name}")
 
         # read, download, and upload image
@@ -114,6 +116,18 @@ async def remove(ctx, game):
         await ctx.send(f"Removed {game} from roster")
     else:
         await ctx.send(f"{game} not in roster")
+
+
+@bot.command()
+async def edit(ctx, game, players):
+    if game not in bot.games:
+        await ctx.send(f"{game} not in roster")
+    else:
+        new_game = Game(game, players)
+        bot.games[game] = new_game
+        with open("games.pkl", "wb") as f:
+            pickle.dump(bot.games, f)
+        await ctx.send(f"Edited {game} with players {new_game.players}")
 
 
 bot.run(os.getenv("TOKEN"))
